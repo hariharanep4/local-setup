@@ -1,0 +1,200 @@
+0. Vagrant
+
+    Before Provision VMs make sure you've installed vagrant plugins.
+
+    vagrant plugin install vagrant-hostmanager
+
+    Use of this plugin is to make an entry of VMs hostnames into /etc/hosts file so that they can communicate each other.
+
+    Go to the directory where Vagrant file exists
+
+    Use the command below to provision VMs
+
+    vagrant up 
+
+    Use the command below to destroy VMs
+
+    vagrant destroy
+
+    Use the command below to check the status of VMs
+
+    vagrant status
+
+
+1. MariaDB Setup
+
+    Log into the MariaDB VM using following command
+
+        vagrant ssh mariadb
+    
+    Verify host entry, if entries are missing update it with IP and hostnames.
+        
+        cat /etc/hosts
+
+    Set Database password variable 
+
+        DATABASE_PASSWORD='admin123' to make it permanent paste this variable in /etc/profile file.
+
+    Update Package index for latest updates
+
+        sudo yum update -y
+
+    Setup repository
+
+        sudo yum install epel-release -y
+
+    Install Git, MariaDB
+
+        sudo yum install git mariadb-server -y
+
+    Start and Enable MariaDB server
+
+        sudo systemctl start mariadb
+
+        sudo systemctl enable mariadb
+
+    RUN mysql_secure_installation
+
+    
+
+    Download the source code from GitHub.
+
+        git clone -b local-setup https://github.com/devopshydclub/vprofile.git
+        cd vprofile
+
+    Set DB name and users.
+
+        sudo mysql -u root -p"$DATABASE_PASSWORD" -e "create database accounts"
+
+        sudo mysql -u root -p"$DATABASE_PASSWORD" -e "grant all privileges on accounts.* to 'admin'@'tomcat' identified by 'admin123'"
+
+        sudo mysql -u root -p"$DATABASE_PASSWORD" -e accounts < src/main/resources/db_backup.sql
+
+        sudo mysql -u root -p"$DATABASE_PASSWORD" -e "flush privileges"
+
+
+    Restart MariaDB server
+
+        sudo systemctl restart mariadb
+
+
+
+
+    Setup the firewall and allow the MariaDB to access from port number 3306
+
+        sudo systemctl start firewalld
+
+        sudo systemctl enable firewalld
+
+        sudo firewall-cmd --get-active-zones
+
+        sudo firewall-cmd --zone=public --add-port=3306/tcp --permanent
+
+        sudo firewall-cmd --reload
+
+        sudo systemctl restart mariadb
+
+
+2. Memcached Setup
+
+    Install, Start, Enable Memcached on port 11211
+
+        sudo yum update -y
+        
+        sudo yum install epel-release -y
+
+        sudo yum install memcached -y
+
+        sudo systemctl start memcached
+
+        sudo systemctl enable memcached
+
+        memcached -p 11211 -U 11111 -u memcached -d
+
+
+    Setup the firewall and allow the port 11211 to access memcache
+
+        sudo systemctl start firewalld
+
+        sudo systemctl enable firewalld
+
+        sudo firewall-cmd --get-active-zones
+
+        sudo firewall-cmd --zone=public --add-port=11211/tcp --permanent
+
+        sudo firewall-cmd --reload
+
+        memcached -p 11211 -U 11111 -u memcached -d
+
+3. RabbitMQ Setup
+
+    Login to RabbitMQ VM
+
+        vagrant ssh rabbitmq
+
+
+    Verfiy Hosts entry, if entries missing update it with IP and hostnames
+
+        cat /etc/hosts
+
+    Update OS with latest updates
+
+        sudo yum update -y
+
+    Setup EPEL repository
+
+        sudo yum install epel-release -y
+    
+    Install dependencies
+
+        sudo yum install socat wget -y
+
+    Create a repo file for Erlang Package.
+
+        wget http://packages.erlang-solutions.com/erlang-solutions-2.0-1.noarch.rpm
+
+        sudo rpm -Uvh erlang-solutions-2.0-1.noarch.rpm
+
+    Install Erlang
+
+        sudo yum install erlang -y
+
+    Install RabbitMQ server
+
+        curl -s https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh | sudo bash
+
+        sudo yum install rabbitmq-server -y
+
+    Start and Enable RabbitMQ server
+
+        sudo systemctl start rabbitmq-server
+
+        sudo systemctl enable rabbitmq-server
+
+    Config changes
+
+        sudo sh -c 'echo "[{rabbit, [{loopback_users, []}]}]." > /etc/rabbitmq/rabbitmq.config'
+
+        sudo rabbitmqctl add_user test test
+
+        sudo rabbitmqctl set_user_tags test administrator
+
+
+    Restart RabbitMQ server
+
+        sudo systemctl restart rabbitmq
+
+    
+    Setup firewall and allow port 25672 to access the RabbitMQ
+
+        sudo systemctl start firewalld
+
+        sudo systemctl enable firewalld
+
+        sudo firewall-cmd --get-active-zones
+
+        sudo firewall-cmd --zone=public --add-port=25672/tcp --permanent
+
+        sudo firewall-cmd --reload
+
+        
