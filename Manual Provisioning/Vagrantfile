@@ -1,1 +1,61 @@
-# Manual provisioning.
+Vagrant.configure("2") do |config|
+    config.hostmanager.enabled = true
+    config.hostmanager.manage_host = true
+
+
+    # Provision Nginx Virtual Machine
+
+    config.vm.define "nginx" do |nginx|
+        nginx.vm.box = "ubuntu/focal64"
+        nginx.vm.hostname = "nginx"
+        nginx.vm.network "private_network", ip: "192.168.33.11"
+        nginx.vm.provider "virtualbox" do |vb|
+            vb.name = "Nginx (Ubuntu 20.04 LTS)"
+        end
+    end
+
+    # Provision Tomcat Application Server Virtual Machine
+
+    config.vm.define "tomcat" do |tomcat|
+        tomcat.vm.box = "centos/7"
+        tomcat.vm.hostname = "tomcat"
+        tomcat.vm.network "private_network", ip: "192.168.33.12"
+        tomcat.vm.provider "virtualbox" do |vb|
+            vb.name = "Tomcat (CentOS 7)"
+        end
+    end
+
+    # Provision RabbitMQ Virtual Machine
+
+    config.vm.define "rabbitmq" do |rabbitmq|
+        rabbitmq.vm.box = "centos/7"
+        rabbitmq.vm.hostname = "rabbitmq"
+        rabbitmq.vm.network "private_network", ip: "192.168.33.13"
+        rabbitmq.vm.provider "virtualbox" do |vb|
+            vb.name = "RabbitMQ (CentOS 7)"
+        end
+    end
+
+    # Provision Memcached Virtual Machine
+
+    config.vm.define "memcached" do |memcached|
+        memcached.vm.box = "centos/7"
+        memcached.vm.hostname = "memcached"
+        memcached.vm.network "private_network", ip: "192.168.33.14"
+        memcached.vm.provider "virtualbox" do |vb|
+            vb.name = "Memcached (CentOS 7)"
+        end
+    end
+
+
+    # Provision MariaDB Virtual Machine
+
+    config.vm.define "mariadb" do |mariadb|
+        mariadb.vm.box = "centos/7"
+        mariadb.vm.hostname = "mariadb"
+        mariadb.vm.network "private_network", ip: "192.168.33.15"
+        mariadb.vm.provider "virtualbox" do |vb|
+            vb.name = "MariaDB (CentOS 7)"
+        end
+    end
+end
