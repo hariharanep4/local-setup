@@ -197,4 +197,169 @@
 
         sudo firewall-cmd --reload
 
+4. Tomcat Setup
+
+    Login to the tomcat VM
         
+        vagrant ssh tomcat
+
+    Verify the host entry, if entries missing update it with IP and hostnames
+
+        cat /etc/hosts
+    
+    Update OS with latest patches or updates
+
+        sudo yum update -y
+
+    Set EPEL repositories
+
+        sudo yum install epel-release -y
+
+    Install dependencies
+
+        sudo yum install java-1.8.0-openjdk -y
+
+        sudo yum install git maven wget -y
+
+    Download Tomcat package 
+
+        wget https://archive.apache.org/dist/tomcat/tomcat-8/v8.5.37/bin/apache-tomcat-8.5.37.tar.gz
+
+        tar xzvf apache-tomcat-8.5.37.tar.gz
+
+    Add tomcat user
+
+        sudo useradd --home-dir /usr/local/tomcat8 --shell /sbin/nologin tomcat
+
+    Copy data to tomcat directory
+
+        sudo cp -r apache-tomcat-8.5.37/* /usr/local/tomcat8/
+
+        sudo chown -R tomcat.tomcat /usr/local/tomcat8
+
+    Setup systemd for Tomcat
+
+        sudo vim /etc/systemd/system/tomcat.service
+        
+        [Unit]
+        Description=Tomcat
+        After=network.target
+
+        [Service]
+        User=tomcat
+        WorkingDirectory=/usr/local/tomcat8
+        Environment=JRE_HOME=/usr/lib/jvm/jre
+        Environment=JAVA_HOME=/usr/lib/jvm/jre
+        Environment=CATALINA_HOME=/usr/local/tomcat8
+        Environment=CATALINE_BASE=/usr/local/tomcat8
+        ExecStart=/usr/local/tomcat8/bin/catalina.sh run
+        ExecStop=/usr/local/tomcat8/bin/shutdown.sh
+        SyslogIdentifier=tomcat-%i
+        
+        [Install]
+        WantedBy=multi-user.target
+
+
+        sudo systemctl daemon-reload
+
+        sudo systemctl start tomcat
+
+        sudo systemctl enable tomcat
+
+    Enable the firewall and allow port 8080 to access tomcat
+
+        sudo systemctl start firewalld
+        
+        sudo systemctl enble firewalld
+
+        sudo firewall-cmd --get-active-zones
+
+        sudo firewall-cmd --zone=public --add-port=8080/tcp --permanent
+
+        sudo firewall-cmd --reload
+
+    
+    Build and Deploy
+
+        Download source code
+
+            git clone -b local-setup https://github.com/devopshydclub/vprofile-project.git
+
+        Update configuration
+
+            cd vprofile-project
+
+            vim src/main/resources/application.properties
+
+            Update file with backend server details
+
+        Build code
+
+            mvn install
+
+        Deploy artifact
+
+            sudo systemctl stop tomcat
+
+            sleep 120
+
+            sudo rm -rf /usr/local/tomcat8/webapps/ROOT*
+
+            sudo cp target/vprofile-v2.war /usr/local/tomcat8/webapps/ROOT.war
+
+            sudo systemctl start tomcat
+
+            sleep 300
+
+            sudo chown -R tomcat.tomcat /usr/local/tomcat8/webapps/
+
+            sudo systemctl restart tomcat
+
+5. Nginx Setup
+
+    Login to Nginx VM
+
+        vagrant ssh nginx 
+    
+    Verify hosts entry, if entries missing update it with IP and hostnames
+
+        cat /etc/hosts
+    
+    Update OS with latest updates
+
+        sudo apt update
+
+        sudo apt upgrade -y
+
+    Install Nginx
+
+        sudo apt install nginx -y 
+
+    Create Nginx config file with below content
+
+        sudo vim /etc/nginx/sites-available/vproapp
+
+        upstream vproapp {
+            server tomcat:8080;
+        }
+
+        server {
+            listen 80;
+            
+        location / {
+            proxy_pass http://vproapp;
+        }
+        }
+
+    Remove default nginx config
+
+        sudo rm -rf /etc/nginx/sites-enabled/default
+
+    Create link to activate website
+
+        sudo ln -s /etc/nginx/sites-available/vproapp /etc/nginx/sites-enabled/vproapp
+
+    Restart Nginx
+
+        sudo systemctl restart nginx     
+
